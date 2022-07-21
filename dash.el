@@ -1198,6 +1198,15 @@ This function's anaphoric counterpart is `--drop-while'.
 For another variant, see also `-take-while'."
   (--drop-while (funcall pred it) list))
 
+(eval-and-compile
+  (when (fboundp 'take)
+    (defun dash--take (n list)
+      (let ((prefix (take n list)))
+        (if (eq prefix list)
+            ;; If same list is returned, make a copy.
+            (copy-sequence prefix)
+          prefix)))))
+
 (defun -take (n list)
   "Return a copy of the first N items in LIST.
 Return a copy of LIST if it contains N items or fewer.
@@ -1205,7 +1214,9 @@ Return nil if N is zero or less.
 
 See also: `-take-last'."
   (declare (pure t) (side-effect-free t))
-  (--take-while (< it-index n) list))
+  (if (eval-when-compile (fboundp 'dash--take))
+      (dash--take n list)
+    (--take-while (< it-index n) list)))
 
 (defun -take-last (n list)
   "Return a copy of the last N items of LIST in order.
@@ -1231,7 +1242,9 @@ Return nil if LIST contains N items or fewer.
 
 See also: `-drop'."
   (declare (pure t) (side-effect-free t))
-  (nbutlast (copy-sequence list) n))
+  (if (eval-when-compile (fboundp 'dash--take))
+      (dash--take (- (length list) n) list)
+    (nbutlast (copy-sequence list) n)))
 
 (defun -split-at (n list)
   "Split LIST into two sublists after the Nth element.
